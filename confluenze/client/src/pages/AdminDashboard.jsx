@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 function formatTime(secs) {
     if (!secs && secs !== 0) return '--:--';
@@ -73,6 +75,84 @@ export default function AdminDashboard() {
         not_started: participants.filter(p => p.status === 'not_started').length,
     };
 
+    const downloadQuestionsPDF = async () => {
+        try {
+            console.log('Starting PDF generation...');
+            const { data: questions } = await axios.get('/api/admin/questions');
+            console.log('Successfully fetched questions:', questions?.length);
+
+            if (!questions || questions.length === 0) {
+                alert('No questions found to download.');
+                return;
+            }
+
+            const doc = new jsPDF();
+            console.log('jsPDF instance created');
+
+            // Header
+            doc.setFontSize(22);
+            doc.setTextColor(0, 0, 0);
+            doc.text("CONFLUENZE 2026 - Debugging Challenges", 14, 20);
+
+            doc.setFontSize(10);
+            doc.setTextColor(100);
+            doc.text("Date: " + new Date().toLocaleDateString(), 14, 28);
+            doc.text("Total Questions: " + questions.length, 14, 33);
+
+            let y = 45;
+
+            questions.forEach((q, index) => {
+                console.log(`Processing question ${index + 1}...`);
+                // Check if we need a new page (approximate height per question)
+                if (y > 240) {
+                    console.log('Adding new page');
+                    doc.addPage();
+                    y = 20;
+                }
+
+                // Question Header
+                doc.setFontSize(12);
+                doc.setTextColor(0);
+                doc.setFont("helvetica", "bold");
+                doc.text(`Q${index + 1}. ${q.question} (${q.language})`, 14, y);
+                y += 7;
+
+                // Code Block
+                doc.setFont("courier", "normal");
+                doc.setFontSize(9);
+                doc.setFillColor(245, 245, 245);
+
+                const codeLines = doc.splitTextToSize(q.code, 180);
+                const rectHeight = (codeLines.length * 4) + 6;
+
+                doc.rect(14, y - 1, 182, rectHeight, 'F');
+                doc.text(codeLines, 16, y + 4);
+
+                y += rectHeight + 8;
+
+                // Options
+                doc.setFont("helvetica", "normal");
+                doc.setFontSize(10);
+                q.options.forEach((opt, optIndex) => {
+                    const label = String.fromCharCode(65 + optIndex); // A, B, C, D
+                    doc.text(`${label}) ${opt}`, 20, y);
+                    y += 6;
+                });
+
+                y += 10; // Space between questions
+            });
+
+            doc.save(`confluenze_questions_${new Date().toISOString().split('T')[0]}.pdf`);
+        } catch (err) {
+            console.error('PDF Download error:', err);
+            if (err.response) {
+                console.error('Data:', err.response.data);
+                console.error('Status:', err.response.status);
+            }
+            alert('Failed to generate PDF. Check console for details.');
+        }
+    };
+
     return (
         <div className="container" style={{ paddingTop: '32px', paddingBottom: '60px' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '28px', flexWrap: 'wrap', gap: '12px' }}>
@@ -83,6 +163,7 @@ export default function AdminDashboard() {
                     </p>
                 </div>
                 <div style={{ display: 'flex', gap: '10px' }}>
+                    <button onClick={downloadQuestionsPDF} className="btn btn-secondary" style={{ padding: '10px 20px', fontSize: '0.8rem', borderColor: 'var(--neon-green)', color: 'var(--neon-green)' }}>📥 DOWNLOAD PDF (NO ANSWERS)</button>
                     <Link to="/admin/users" className="btn btn-secondary" style={{ padding: '10px 20px', fontSize: '0.8rem' }}>👥 PARTICIPANTS</Link>
                     <Link to="/admin/leaderboard" className="btn btn-secondary" style={{ padding: '10px 20px', fontSize: '0.8rem' }}>🏆 LEADERBOARD</Link>
                     <Link to="/admin/shortlist" className="btn btn-secondary" style={{ padding: '10px 20px', fontSize: '0.8rem' }}>⭐ SHORTLIST</Link>

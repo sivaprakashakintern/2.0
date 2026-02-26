@@ -211,5 +211,11 @@ router.delete('/users', async (req, res) => {
     }
 });
 
+// ─── GET ALL QUESTIONS ─────────────────────────────────────────
+router.get('/questions', (req, res) => {
+    console.log('Admin requested questions for download');
+    res.json(questions);
+});
+
 module.exports = router;
 

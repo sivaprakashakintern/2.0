@@ -4,7 +4,7 @@ const bcrypt = require('bcryptjs');
 const dbConfig = {
     host: process.env.DB_HOST || 'localhost',
     user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASS || '1525',
+    password: process.env.DB_PASS || 'niitm',
     database: process.env.DB_NAME || 'confluenze',
 };
 
@@ -40,7 +40,7 @@ async function initializeDatabase() {
                 member2 VARCHAR(100) NOT NULL,
                 contact1 VARCHAR(20) NOT NULL,
                 contact2 VARCHAR(20) NOT NULL,
-                chest_number VARCHAR(20) NOT NULL,
+                chest_number VARCHAR(100) NOT NULL,
                 college VARCHAR(150) NOT NULL,
                 is_admin TINYINT(1) DEFAULT 0,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
